@@ -23,7 +23,10 @@ namespace auv_control {
         std::vector<std::string> names;
         base::JointLimits limits;
 
+        virtual bool setMatrix(::base::MatrixXd const & value);
+
         bool calcOutput(const LinearAngular6DCommandStatus &merged_command);
+        bool dynamicConfigure(base::MatrixXd matrix, std::vector<std::string> names, base::VectorXd thruster_weights, bool svd_calculation, base::JointLimits limits_, std::vector<base::JointState::MODE> control_modes);
 
     public:
         /** TaskContext constructor for AccelerationController

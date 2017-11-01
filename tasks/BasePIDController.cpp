@@ -13,6 +13,11 @@ BasePIDController::BasePIDController(std::string const& name)
 BasePIDController::BasePIDController(std::string const& name, RTT::ExecutionEngine* engine)
     : BasePIDControllerBase(name, engine)
 {
+         for (int i = 0; i < 3; ++i)
+        {
+            mPIDs.linear[i] = motor_controller::PID(false);
+            mPIDs.angular[i] = motor_controller::PID(false);
+        }
 }
 
 BasePIDController::~BasePIDController()

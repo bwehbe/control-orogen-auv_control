@@ -26,21 +26,30 @@ bool AccelerationController::configureHook()
     if (! AccelerationControllerBase::configureHook()){
         return false;
     }
-    thrusterMatrix = _matrix.get();
+    return dynamicConfigure(_matrix.get(), _names.get(), _thrusters_weights.get(), _svd_calculation.get(), _limits.get(), _control_modes.get());
+}
+
+bool AccelerationController::setMatrix(::base::MatrixXd const & value)
+{
+    return dynamicConfigure(value, _names.get(), _thrusters_weights.get(), _svd_calculation.get(), _limits.get(), _control_modes.get());
+}
+
+bool AccelerationController::dynamicConfigure(base::MatrixXd matrix, std::vector<std::string> names, base::VectorXd thrusters_weights, bool svd_calculation, base::JointLimits limits_, std::vector <base::JointState::MODE> control_modes) {
+    thrusterMatrix = matrix;
     unsigned int numberOfThrusters = thrusterMatrix.cols();
     inputVector = Eigen::VectorXd::Zero(6);
     cmdVector = Eigen::VectorXd::Zero(numberOfThrusters);
     expectedEffortVector = Eigen::VectorXd::Zero(6);
-    names = _names.get();
+    names = names;
     base::MatrixXd weighingMatrix;
-    base::VectorXd thrustersWeights = _thrusters_weights.get();
+    base::VectorXd thrustersWeights = thrusters_weights;
 
-    if (thrustersWeights.size() != 0 && _svd_calculation == false)
+    if (thrustersWeights.size() != 0 && svd_calculation == false)
     {
         LOG_ERROR("The thrusters weights vector should be empty if svd_calculation is FALSE.");
         return false;
     }
-    else if(thrustersWeights.size() == 0 && _svd_calculation == true)
+    else if(thrustersWeights.size() == 0 && svd_calculation == true)
     {
         LOG_WARN("The svd_calculation is TRUE, but the thrusters weights were not set. "
                  "Setting the thrusters weights to a vector of ones...");
@@ -68,7 +77,7 @@ bool AccelerationController::configureHook()
 
     weighingMatrix = thrustersWeights.asDiagonal();
 
-    if(_svd_calculation.get())
+    if(svd_calculation)
     {
         base::MatrixXd auxPseudoInverse;
         svd.reset(new Eigen::JacobiSVD<Eigen::MatrixXd>(thrusterMatrix*weighingMatrix.inverse()*thrusterMatrix.transpose(),  Eigen::ComputeThinU | Eigen::ComputeThinV));
@@ -90,11 +99,11 @@ bool AccelerationController::configureHook()
         return false;
     }
 
-    if(_limits.get().size() != numberOfThrusters && !_limits.get().empty()){
+    if(limits_.size() != numberOfThrusters && !limits_.empty()){
         exception(WRONG_SIZE_OF_LIMITS);
         return false;
     } else {
-        limits = _limits.get();
+        limits = limits_;
     }
 
     if(names.size() && limits.names.size()){
@@ -109,7 +118,7 @@ bool AccelerationController::configureHook()
         }
     }
 
-    controlModes = _control_modes.get();
+    controlModes = control_modes;
     if(controlModes.size() == 0){
         //resize the controlModes to number of Thrusters
         controlModes.resize(numberOfThrusters);

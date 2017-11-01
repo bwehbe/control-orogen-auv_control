@@ -15,6 +15,8 @@ task_context "Base" do
     needs_configuration
     abstract
 
+    property("ignore_connected_inputs", "bool", false)
+
     # This property defines which parts of the command input is expected to be
     # set once we merged all the declared input ports. 
     property("expected_inputs", "/auv_control/ExpectedInputs").
@@ -194,7 +196,7 @@ task_context "AccelerationController" do
     # Matrix with size of 6 * n. n means the count of thrusters that are used.
     # The rows 0 to 2 of the matrix are the linear axis. The lines 3 to 5 of the
     # matrix are the angular axis.
-    property "matrix", "/base/MatrixXd"
+    property("matrix", "/base/MatrixXd").dynamic
     
     # Weights that indicate which thrusters should be prioritized in
     # cases where multiple solutions are possible. The thrusters with lower

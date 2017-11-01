@@ -39,6 +39,10 @@ bool CommandInjection::calcOutput(const LinearAngular6DCommandStatus &merged_com
         }
     }
 
+    if(output_command.time.toSeconds() < 1){
+        output_command.time = base::Time::now();
+    }
+
     _cmd_out.write(output_command);
     return true;
 }

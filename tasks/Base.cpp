@@ -117,7 +117,7 @@ void Base::cleanupHook()
 
 Base::States Base::performOneLoop()
 {
-    if(!checkConnectedPorts(input_ports, connected_input_ports))
+    if(!checkConnectedPorts(input_ports, connected_input_ports) && !_ignore_connected_inputs.get()) 
         return WAIT_FOR_CONNECTED_INPUT_PORT;
 
     LinearAngular6DCommandStatus merged_command;
@@ -171,8 +171,12 @@ Base::States Base::gatherInputCommand(LinearAngular6DCommandStatus &merged_comma
 
         RTT::FlowStatus status = port->readNewest(current_port);
 
-        if(status == RTT::NoData)
+        if(status == RTT::NoData){
+            if(_ignore_connected_inputs.get()){
+                return CONTROLLING;
+            }
             return WAIT_FOR_INPUT;
+        }
         else if(status == RTT::NewData)
         {   // Has at least one new data
             merged_command.status = RTT::NewData;
