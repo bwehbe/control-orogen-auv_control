@@ -19,6 +19,23 @@ OptimalHeadingController::~OptimalHeadingController()
 {
 }
 
+bool OptimalHeadingController::disable()
+{
+    if (state() == OPTIMAL_HEADING){
+        state(CONTROLLING);
+    }
+    
+    return true;
+}
+
+bool OptimalHeadingController::enable()
+{
+    if (state() != OPTIMAL_HEADING){
+        state(OPTIMAL_HEADING);
+    }
+    
+    return true;
+}
 
 
 /// The following lines are template definitions for the various state machine
@@ -29,9 +46,6 @@ bool OptimalHeadingController::configureHook()
 {
     if (! OptimalHeadingControllerBase::configureHook())
         return false;
-
-    new_orientation_samples_timeout = base::Timeout(_timeout_in.value());
-
     return true;
 }
 bool OptimalHeadingController::startHook()
@@ -42,35 +56,11 @@ bool OptimalHeadingController::startHook()
 }
 void OptimalHeadingController::updateHook()
 {
-    RTT::FlowStatus status = _orientation_samples.readNewest(orientation_sample);
-    if (status == RTT::NoData){
-        if(state() != WAIT_FOR_ORIENTATION_SAMPLE){
-            error(WAIT_FOR_ORIENTATION_SAMPLE);
-        }
-        return;
-    }
-    else if (status == RTT::OldData && new_orientation_samples_timeout.elapsed()){
-        if (state() != WAIT_FOR_ORIENTATION_SAMPLE){
-            error(WAIT_FOR_ORIENTATION_SAMPLE);
-        }
-        return;
-    }
-    else{
-        new_orientation_samples_timeout.restart();
-    }
-    
     OptimalHeadingControllerBase::updateHook();
 }
 
 void OptimalHeadingController::errorHook()
 {
-    if( state() == WAIT_FOR_ORIENTATION_SAMPLE){
-        base::samples::RigidBodyState orientation_sample;
-        if (_orientation_samples.readNewest(orientation_sample) == RTT::NewData){
-            recover();
-        }
-    }
-
     OptimalHeadingControllerBase::errorHook();
 }
 
@@ -87,12 +77,26 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
 
     output_command = merged_command.command;
 
-    //Set z to 0, to use only x and y fpr the distance
-    output_command.linear(2) = 0;
-    if(merged_command.command.linear.norm() > opt_distance){
-        output_command.angular(2) = base::Angle::normalizeRad(atan2(merged_command.command.linear(1), merged_command.command.linear(0))
-                //+base::getYaw(orientation_sample.orientation)
-                + opt_heading);
+    if(state() == OPTIMAL_HEADING){
+        //Set z to 0, to use only x and y fpr the distance
+        base::Vector3d linear = merged_command.command.linear;
+
+        linear[2] = 0.0;
+
+
+        
+        if(_always_forward.get()){
+            output_command.x() = linear.norm();
+        }
+        output_command.y() = 0;
+        output_command.yaw() = base::Angle::normalizeRad(atan2(merged_command.command.linear(1), 
+                                                               merged_command.command.linear(0))
+                                                         + opt_heading);
+
+        if(linear.norm() < opt_distance){
+            state(CONTROLLING);
+        }
+
     }
     
     //write the command

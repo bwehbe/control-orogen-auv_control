@@ -29,9 +29,14 @@ Frame.
     {
 	friend class OptimalHeadingControllerBase;
     protected:
+        /* Handler for the disable operation
+         */
+        virtual bool disable();
 
-        base::samples::RigidBodyState orientation_sample;
-        base::Timeout new_orientation_samples_timeout;
+        /* Handler for the enable operation
+         */
+        virtual bool enable();
+
         void keep();
         bool calcOutput(const LinearAngular6DCommandStatus &merged_command);
 

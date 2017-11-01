@@ -315,15 +315,21 @@ task_context "OptimalHeadingController" do
     # The distance to target position, over that the vehicle used
     # the optimal heading
     property "optimal_heading_distance", "double"
-    
-    # The system state. What is required depends on which parts of the state are
-    # given as input
-    input_port 'orientation_samples', '/base/samples/RigidBodyState'
+
+    # if this property is true the vehicle will drive all the way with forward speed
+    property "always_forward", "bool", false
     
     # The output command.
     output_port 'cmd_out', '/base/LinearAngular6DCommand'
 
-    error_states :WAIT_FOR_ORIENTATION_SAMPLE
+    
+    operation("enable").
+        returns("bool")
+
+    operation("disable").
+        returns("bool")
+
+    runtime_states :OPTIMAL_HEADING
 end
 
 # Base task for ThrustersInput and ThrustersFeedback
