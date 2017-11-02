@@ -329,7 +329,7 @@ task_context "OptimalHeadingController" do
     operation("disable").
         returns("bool")
 
-    runtime_states :OPTIMAL_HEADING
+    runtime_states :OPTIMAL_HEADING, :NO_XY_COMMAND
 end
 
 # Base task for ThrustersInput and ThrustersFeedback

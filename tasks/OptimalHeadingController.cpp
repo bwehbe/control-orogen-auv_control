@@ -23,18 +23,20 @@ bool OptimalHeadingController::disable()
 {
     if (state() == OPTIMAL_HEADING){
         state(CONTROLLING);
+        return true; 
     }
     
-    return true;
+    return false;
 }
 
 bool OptimalHeadingController::enable()
 {
-    if (state() != OPTIMAL_HEADING){
+    if (state() == CONTROLLING){
         state(OPTIMAL_HEADING);
+        return true;
     }
     
-    return true;
+    return false;
 }
 
 
@@ -76,6 +78,12 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
     opt_distance = _optimal_heading_distance.get();
 
     output_command = merged_command.command;
+
+    if(base::isUnset(merged_command.command.linear[0]) || base::isUnset(merged_command.command.linear[1]) ||state() != NO_XY_COMMAND){
+        state(NO_XY_COMMAND);
+    } else if(state() == NO_XY_COMMAND){
+        state(CONTROLLING);
+    }
 
     if(state() == OPTIMAL_HEADING){
         //Set z to 0, to use only x and y fpr the distance
