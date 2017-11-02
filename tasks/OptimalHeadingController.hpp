@@ -40,6 +40,8 @@ Frame.
         void keep();
         bool calcOutput(const LinearAngular6DCommandStatus &merged_command);
 
+        base::Vector3d linear;
+        bool do_optimal_heading;
 
     public:
         /** TaskContext constructor for OptimalHeadingController

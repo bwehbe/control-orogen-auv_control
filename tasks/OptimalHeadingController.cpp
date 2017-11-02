@@ -21,22 +21,20 @@ OptimalHeadingController::~OptimalHeadingController()
 
 bool OptimalHeadingController::disable()
 {
-    if (state() == OPTIMAL_HEADING){
-        state(CONTROLLING);
-        return true; 
-    }
-    
+    do_optimal_heading = false; 
     return false;
 }
 
 bool OptimalHeadingController::enable()
 {
-    if (state() == CONTROLLING){
-        state(OPTIMAL_HEADING);
-        return true;
+    if(base::isUnset(linear[0]) || base::isUnset(linear[1])){
+        do_optimal_heading = false;
+        return false;
+    } else{
+        do_optimal_heading = true;
     }
-    
-    return false;
+
+    return true;
 }
 
 
@@ -78,16 +76,14 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
     opt_distance = _optimal_heading_distance.get();
 
     output_command = merged_command.command;
+    linear = merged_command.command.linear;
 
-    if(base::isUnset(merged_command.command.linear[0]) || base::isUnset(merged_command.command.linear[1]) ||state() != NO_XY_COMMAND){
-        state(NO_XY_COMMAND);
-    } else if(state() == NO_XY_COMMAND){
-        state(CONTROLLING);
+    if(base::isUnset(linear[0]) || base::isUnset(linear[1])){
+        do_optimal_heading = false;
     }
 
-    if(state() == OPTIMAL_HEADING){
+    if(do_optimal_heading){
         //Set z to 0, to use only x and y fpr the distance
-        base::Vector3d linear = merged_command.command.linear;
 
         linear[2] = 0.0;
 
@@ -102,11 +98,12 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
                                                          + opt_heading);
 
         if(linear.norm() < opt_distance){
-            state(CONTROLLING);
+            do_optimal_heading = false;
         }
 
     }
-    
+   
+    _do_optimal_heading.write(do_optimal_heading);
     //write the command
     _cmd_out.write(output_command);
 

@@ -321,6 +321,8 @@ task_context "OptimalHeadingController" do
     
     # The output command.
     output_port 'cmd_out', '/base/LinearAngular6DCommand'
+    
+    output_port 'do_optimal_heading', 'bool'
 
     
     operation("enable").
