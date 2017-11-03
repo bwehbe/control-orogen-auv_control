@@ -177,20 +177,20 @@ Base::States Base::gatherInputCommand(LinearAngular6DCommandStatus &merged_comma
                 return WAIT_FOR_INPUT;
             }
         }
-        else if(status == RTT::NewData)
-        {   // Has at least one new data
-            merged_command.status = RTT::NewData;
-            port_info.is_active = isActive(current_port);
-            port_info.last_sample_time = current_port.time;
-            port_info.last_system_time = base::Time::now();
-            if (port_info.is_active){
+        else{ 
+            if(status == RTT::NewData)
+            {   // Has at least one new data
+                merged_command.status = RTT::NewData;
+                port_info.is_active = isActive(current_port);
+                port_info.last_sample_time = current_port.time;
+                port_info.last_system_time = base::Time::now();
                 if(newestCommandTime < current_port.time)
                     newestCommandTime = current_port.time;
-        
-                States merge_state = merge(_expected_inputs.get(), current_port, merged_command.command);
-                if(merge_state != CONTROLLING)
-                    return merge_state;
+
             }
+            States merge_state = merge(_expected_inputs.get(), current_port, merged_command.command);
+            if(merge_state != CONTROLLING)
+                return merge_state;
         }
     }
 
