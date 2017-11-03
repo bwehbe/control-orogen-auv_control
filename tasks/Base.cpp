@@ -140,6 +140,7 @@ void Base::registerInput(std::string const& name, base::Time timeout, InputPortT
     InputPortInfo info;
     info.name = name;
     info.timeout = timeout;
+    info.is_active = false;
     info.input_port = input_port;
     input_ports.push_back(info);
 }
@@ -172,22 +173,25 @@ Base::States Base::gatherInputCommand(LinearAngular6DCommandStatus &merged_comma
         RTT::FlowStatus status = port->readNewest(current_port);
 
         if(status == RTT::NoData){
-            if(_ignore_connected_inputs.get()){
-                return CONTROLLING;
+            if(!_ignore_connected_inputs.get()){
+                return WAIT_FOR_INPUT;
             }
-            return WAIT_FOR_INPUT;
         }
         else if(status == RTT::NewData)
         {   // Has at least one new data
             merged_command.status = RTT::NewData;
+            port_info.is_active = isActive(current_port);
             port_info.last_sample_time = current_port.time;
             port_info.last_system_time = base::Time::now();
-            if (newestCommandTime < current_port.time)
-                newestCommandTime = current_port.time;
+            if (port_info.is_active){
+                if(newestCommandTime < current_port.time)
+                    newestCommandTime = current_port.time;
+        
+                States merge_state = merge(_expected_inputs.get(), current_port, merged_command.command);
+                if(merge_state != CONTROLLING)
+                    return merge_state;
+            }
         }
-        States merge_state = merge(_expected_inputs.get(), current_port, merged_command.command);
-        if(merge_state != CONTROLLING)
-            return merge_state;
     }
 
     if (!verifyTimeout(newestCommandTime))
@@ -199,6 +203,17 @@ Base::States Base::gatherInputCommand(LinearAngular6DCommandStatus &merged_comma
     return CONTROLLING;
 }
 
+bool Base::isActive(base::LinearAngular6DCommand const& cmd){
+    for (unsigned i = 0; i<3; i++){
+        if(!base::isUnset(cmd.linear[i]))
+                return true;
+        if(!base::isUnset(cmd.angular[i]))
+                return true;
+    }
+
+    return false;
+}
+
 bool Base::verifyTimeout(const base::Time &newest_command)
 {
     // In case it's not initialzed
@@ -206,7 +221,7 @@ bool Base::verifyTimeout(const base::Time &newest_command)
         return true;
     for (unsigned int i = 0; i < input_ports.size(); ++i)
     {
-        if(input_ports[i].input_port->connected())
+        if(input_ports[i].input_port->connected() && input_ports[i].is_active)
         {
             base::Time timeout = input_ports[i].timeout;
             base::Time port_time = input_ports[i].last_sample_time;

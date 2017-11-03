@@ -27,6 +27,7 @@ namespace auv_control {
             base::Time timeout;
             base::Time last_sample_time;
             base::Time last_system_time;
+            bool is_active;
             InputPortType *input_port;
             InputPortInfo()
                 :input_port(0){}
@@ -38,6 +39,8 @@ namespace auv_control {
         void registerInput(std::string const& name, base::Time timeout, InputPortType* input_port);
         InputPortType* deregisterInput(std::string const& name);
         base::Time newestCommandTime;
+
+        bool isActive(base::LinearAngular6DCommand const& cmd);
 
         /** Check for timeout in input ports
          *
