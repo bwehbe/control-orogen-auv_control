@@ -22,17 +22,14 @@ OptimalHeadingController::~OptimalHeadingController()
 bool OptimalHeadingController::disable()
 {
     do_optimal_heading = false; 
+    std::cout << "OPTIMAL False" << std::endl;
     return false;
 }
 
 bool OptimalHeadingController::enable()
 {
-    if(base::isUnset(linear[0]) || base::isUnset(linear[1])){
-        do_optimal_heading = false;
-        return false;
-    } else{
-        do_optimal_heading = true;
-    }
+    do_optimal_heading = true;
+    std::cout << "OPTIMAL TRUE" << std::endl;
 
     return true;
 }
@@ -52,6 +49,7 @@ bool OptimalHeadingController::startHook()
 {
     if (! OptimalHeadingControllerBase::startHook())
         return false;
+    do_optimal_heading = false;
     return true;
 }
 void OptimalHeadingController::updateHook()
@@ -78,11 +76,7 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
     output_command = merged_command.command;
     linear = merged_command.command.linear;
 
-    if(base::isUnset(linear[0]) || base::isUnset(linear[1])){
-        do_optimal_heading = false;
-    }
-
-    if(do_optimal_heading){
+    if(do_optimal_heading && !(base::isUnset(linear[0]) || base::isUnset(linear[1]))){
         //Set z to 0, to use only x and y fpr the distance
 
         linear[2] = 0.0;
@@ -98,6 +92,7 @@ bool OptimalHeadingController::calcOutput(const LinearAngular6DCommandStatus &me
                                                          + opt_heading);
 
         if(linear.norm() < opt_distance){
+            std::cout << "ERREICHT!" << std::endl;
             do_optimal_heading = false;
         }
 
